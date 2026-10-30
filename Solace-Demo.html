@@ -1,0 +1,1755 @@
+<!--
+  ================================================================================
+  SOLACE PERSONAL FINANCE — v2.4.4 FULLY POLISHED E-TSY PRODUCTION BUILD
+  ================================================================================
+  
+  SUMMARY OF V2.4.4 POLISH UPGRADES:
+  1. Locale-Aware Currency Formatting: Mapped currencies (USD, EUR, GBP, CAD, AUD) to their proper regional locales (e.g. en-GB for GBP, de-DE for EUR).
+  2. Robust Collision-Resistant ID Generator: Replaced in-memory counter with `window.crypto.randomUUID()` with secure fallback.
+  3. Professional CSV Import Preview: Added interactive confirmation modal showing parsed preview rows before importing.
+  4. Minimalist SVG Empty State Illustrations: Replaced plain text placeholders with elegant vector iconography across all views.
+  5. Executive Print Styles: Enhanced print layout with professional report headers, clean page breaks, and high-contrast tables.
+  ================================================================================
+-->
+<!DOCTYPE html>
+<html lang="en" data-accent="blush">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solace — Net Worth & Budget</title>
+<style>
+:root {
+  --bg:#100e0f; --surface:#1b1718; --surface-2:#262022; --fg:#f7f3ee; --muted:#b7aaa3;
+  --line:#3a3133; --accent:#e3949f; --accent-fg:#2a1418; --good:#8dcaa6; --bad:#e89a9a;
+  --sans: Outfit, ui-sans-serif, system-ui, sans-serif;
+  --display: Fraunces, Georgia, serif;
+  color-scheme: dark;
+}
+html.light {
+  --bg:#f7f2ed; --surface:#fffaf6; --surface-2:#f0e8e2; --fg:#241d1b; --muted:#6f645e; --line:#e4d8d1;
+  color-scheme: light;
+}
+html[data-accent="blush"]{--accent:#e3949f}
+html[data-accent="sage"]{--accent:#8eae86}
+html[data-accent="lavender"]{--accent:#a99bd4}
+html[data-accent="sky"]{--accent:#7eabd4}
+html[data-accent="clay"]{--accent:#d4a06a}
+
+/* Global Custom Scrollbars */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+* { scrollbar-width: thin; scrollbar-color: var(--line) transparent; box-sizing:border-box; }
+
+html,body{margin:0;background:radial-gradient(900px 320px at 0% -8%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%), var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{display:flex;min-height:100vh;width:100%}
+.side{width:240px;flex:none;border-right:1px solid var(--line);background:color-mix(in srgb, var(--surface) 70%, transparent);padding:16px;display:flex;flex-direction:column}
+.brand{display:flex;gap:10px;align-items:center;margin:4px 4px 18px}
+.mark{width:36px;height:36px;border-radius:12px;background:var(--accent);color:var(--accent-fg);display:grid;place-items:center;font-weight:650}
+.brand b{font-family:var(--display);font-weight:650;font-size:18px;display:block}
+.brand span{color:var(--muted);font-size:12px}
+nav{display:flex;flex-direction:column;gap:4px}
+nav button{height:44px;border:0;background:transparent;border-radius:12px;text-align:left;padding:0 12px}
+nav button.on{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.fine{margin-top:auto;color:var(--muted);font-size:12px;line-height:1.45;padding:16px 8px 0}
+
+/* Enhanced Ultra-wide Constraints */
+main{flex:1;min-width:0;padding:32px 40px 72px;max-width:1150px;margin:0 auto}
+
+.top{display:none;position:sticky;top:0;z-index:5;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);background:color-mix(in srgb, var(--bg) 92%, transparent)}
+.iconbtn{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:transparent}
+h1{font-family:var(--display);font-weight:650;font-size:36px;margin:0 0 4px;letter-spacing:-.02em}
+h2{font-family:var(--display);font-weight:650;font-size:22px;margin:0}
+.sub{color:var(--muted);margin:0 0 18px}
+.grid{display:grid;gap:12px}
+.g4{grid-template-columns:1.4fr 1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:1fr 1fr}
+
+/* Interactive Spotlight Card Styles */
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 0 color-mix(in srgb, white 7%, transparent), 0 18px 40px color-mix(in srgb, black 32%, transparent);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+  z-index: 1;
+}
+.card:hover::before {
+  opacity: 1;
+}
+.card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+.big{font-family:var(--display);font-size:32px;margin:6px 0 0;font-variant-numeric:tabular-nums}
+.themebtn{height:40px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:0 14px;margin-left:auto}
+.hint{color:var(--muted);font-size:12px;margin:4px 0 0}
+.good{color:var(--good)}.bad{color:var(--bad)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border-bottom:0}
+.field,select.field,textarea.field{width:100%;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);padding:0 12px;outline:none}
+textarea.field{height:auto;min-height:96px;padding:12px}
+.field:focus{border-color:var(--accent)}
+.btn{height:44px;border-radius:999px;border:0;padding:0 16px;background:var(--accent);color:var(--accent-fg);font-weight:600}
+.btn.ghost{background:var(--surface-2);color:var(--fg);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.months{display:flex;gap:8px;overflow:auto;padding-bottom:8px}
+.months button{height:40px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;flex:none}
+.months button.on{background:var(--accent);color:var(--accent-fg);border-color:transparent}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .hd{text-align:center;color:var(--muted);font-size:12px;padding:6px 0}
+.day{min-height:56px;border-radius:12px;border:1px solid var(--line);background:transparent;padding:6px}
+.day.on{border-color:var(--accent);background:var(--surface-2)}
+.dots{display:flex;gap:3px;justify-content:center;margin-top:4px}
+.dots b{width:6px;height:6px;border-radius:99px;background:var(--accent);display:block}
+.dots b.pay{background:var(--good)}
+.swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.sw{width:112px;border-radius:16px;border:1px solid var(--line);background:transparent;padding:0;overflow:hidden}
+.sw.on{border-color:var(--fg)}
+.sw i{display:block;height:32px}
+.sw span{display:block;padding:6px 0;font-size:13px}
+.switch{width:56px;height:32px;border-radius:99px;border:0;background:var(--surface-2);padding:4px}
+.switch.on{background:var(--accent)}
+.switch i{display:block;width:24px;height:24px;border-radius:99px;background:var(--fg);transition:transform .15s}
+.switch.on i{transform:translateX(24px)}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:10px 16px;font-size:14px;z-index:100}
+.drawer{display:none}
+.formgrid{display:grid;gap:8px}
+
+/* Modal Overlays with Accessibility Focus Management */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 1100;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn 0.15s ease-out;
+}
+.modal-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 24px;
+  padding: 24px; width: 100%; max-width: 440px; box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+  animation: scaleUp 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* Page Transition Animation */
+@keyframes fadeEnter {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.fade-enter {
+  animation: fadeEnter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* PIN Lock Screen Overlay */
+.lock-overlay {
+  position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; padding: 20px;
+}
+.lock-card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 24px;
+  padding: 32px; width: 100%; max-width: 380px; text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+.pin-dots {
+  display: flex; justify-content: center; gap: 12px; margin: 24px 0;
+}
+.pin-dot {
+  width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--accent);
+  background: transparent; transition: background 0.15s;
+}
+.pin-dot.filled { background: var(--accent); }
+.pin-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px;
+}
+.pin-btn {
+  height: 56px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface-2);
+  font-family: var(--display); font-size: 20px; font-weight: 600; color: var(--fg);
+  display: grid; place-items: center; cursor: pointer; transition: background 0.15s;
+}
+.pin-btn:hover { background: color-mix(in srgb, var(--accent) 15%, var(--surface-2)); border-color: var(--accent); }
+
+/* Global Interactive Chart Styles */
+.chart-hover { cursor:pointer; transition:opacity 0.2s; }
+.chart-hover:hover { opacity:0.85; }
+.chart-dot {
+  position:absolute; transform:translate(-50%, -50%);
+  width:10px; height:10px; border:2px solid var(--surface); border-radius:50%; z-index:2;
+}
+.chart-dot::after {
+  content:''; position:absolute; inset:-12px; border-radius:50%;
+}
+.global-tip {
+  position:fixed; background:var(--fg); color:var(--bg); padding:6px 10px; border-radius:6px;
+  font-size:13px; font-weight:600; opacity:0; pointer-events:none; z-index:100; transition:opacity 0.15s;
+  white-space:nowrap; transform:translate(-50%, -100%); margin-top:-10px; box-shadow:0 4px 12px rgba(0,0,0,0.2);
+}
+.global-tip::after {
+  content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%);
+  border-width:5px; border-style:solid; border-color:var(--fg) transparent transparent transparent;
+}
+
+/* Executive Print Optimization */
+@media print {
+  .side, .top, .drawer, .actions, .themebtn, button, input, select { display: none !important; }
+  .app { display: block !important; }
+  main { padding: 0 !important; max-width: none !important; margin: 0 !important; }
+  body { background: white !important; color: black !important; }
+  body::before {
+    content: "Solace Financial Report — Printed on " attr(data-print-date);
+    display: block; font-family: var(--display); font-size: 20px; font-weight: 700;
+    margin-bottom: 24px; border-bottom: 2px solid #333; padding-bottom: 8px; color: #111;
+  }
+  .card { border: 1px solid #bbb !important; box-shadow: none !important; break-inside: avoid; margin-bottom: 16px; background: #fff !important; color: #111 !important; }
+  .card::before { display: none !important; }
+  .big { color: #111 !important; }
+  .lbl { color: #555 !important; }
+  .row { border-color: #ddd !important; color: #111 !important; }
+}
+
+@media (max-width:800px){
+  .side{display:none}
+  .top{display:flex}
+  main{padding:18px 14px 72px}
+  .g4,.g3,.g2{grid-template-columns:1fr}
+  h1{font-size:30px}
+  .drawer.open{display:block;position:fixed;inset:0;z-index:20}
+  .drawer .bg{position:absolute;inset:0;background:rgba(0,0,0,.5);border:0}
+  .drawer .panel{position:absolute;left:0;top:0;bottom:0;width:280px;background:var(--surface);padding:16px}
+}
+</style>
+</head>
+<body data-print-date="">
+<style>
+#solace-demo-banner{position:sticky;top:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;background:#30242a;color:#fff4f4;border-bottom:1px solid #76515b;font:600 12px/1.45 ui-sans-serif,system-ui,sans-serif;text-align:center;letter-spacing:.02em}
+#solace-demo-banner strong{color:#ffc8d0}
+#solace-demo-banner span{font-weight:400;opacity:.95}
+@media(max-width:600px){#solace-demo-banner{align-items:flex-start;flex-direction:column;gap:2px;text-align:left}}
+.solace-demo-locked{opacity:.62!important;cursor:not-allowed!important}
+</style>
+<div id="solace-demo-banner"><strong>SOLACE DEMO</strong><span>Explore the planner with sample data. Backup, restore, CSV export/import, and report printing are available in the full version.</span></div>
+<script>window.SOLACE_DEMO_MODE = true;</script>
+<div class="global-tip" id="global-tip"></div>
+<div id="lock-screen" style="display:none"></div>
+<div id="modal-container"></div>
+<div class="top">
+  <button class="iconbtn" id="menu" aria-label="Menu">☰</button>
+  <b style="font-family:var(--display);font-size:20px">Solace</b>
+  <div style="display:flex;gap:8px;margin-left:auto">
+    <button class="iconbtn" id="lockTop" title="Lock Solace" aria-label="Lock Solace">🔒</button>
+    <button class="themebtn" id="themeTop" type="button" style="margin-left:0">Dark</button>
+  </div>
+</div>
+<div class="drawer" id="drawer">
+  <button class="bg" id="close" aria-label="Close"></button>
+  <div class="panel">
+    <div id="drawerNav"></div>
+    <button class="themebtn" id="themeDrawer" type="button" style="margin-top:16px">Dark</button>
+  </div>
+</div>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="mark">S</div>
+      <div><b>Solace</b><span>Net worth, calmly</span></div>
+      <button class="iconbtn" id="lockSide" title="Lock Solace" aria-label="Lock Solace" style="margin-left:auto;width:36px;height:36px;font-size:14px">🔒</button>
+    </div>
+    <nav id="nav"></nav>
+    <button class="themebtn" id="themeSide" type="button" style="margin:16px 4px 0">Dark</button>
+    <p class="fine">Saved on this device only. This file works with no internet.</p>
+  </aside>
+  <main id="view"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script>
+const KEY = "solace-html-v2";
+const LEGACY_KEY = "solace-html-v1";
+const SCHEMA_VERSION = 2;
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const NAV = [["dashboard","Dashboard"],["today","Today"],["calendar","Calendar"],["envelopes","Envelopes"],["ledger","Ledger"],["paycheck","Paycheck"],["worth","Net worth"],["debt","Debt"],["savings","Savings"],["goals","Goals"],["reports","Reports"],["settings","Settings"]];
+
+// Collision-resistant unique ID generator using crypto.randomUUID with reliable fallback
+const uid = () => {
+  if (window.crypto && typeof window.crypto.randomUUID === "function") {
+    return "sol_" + window.crypto.randomUUID();
+  }
+  return "sol_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 11) + Math.random().toString(36).substring(2, 11);
+};
+
+const mk = (d = new Date()) => {
+  const dt = asDate(d);
+  return dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
+};
+
+const today = () => {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+};
+
+// Locale-Aware Currency Formatting mapping
+const CURRENCY_LOCALES = { USD: "en-US", EUR: "de-DE", GBP: "en-GB", CAD: "en-CA", AUD: "en-AU" };
+
+const money = n => {
+  const val = Number(n) || 0;
+  const decimals = Math.abs(val) % 1 !== 0 ? 2 : 0;
+  const curr = S && S.currency ? S.currency : "USD";
+  const locale = CURRENCY_LOCALES[curr] || "en-US";
+  return (val < 0 ? "-" : "") + new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency: curr,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  }).format(Math.abs(val));
+};
+
+// Minimalist SVG Empty State Illustrations
+function emptyStateBox(title, subtitle, svgPath = `<path d="M12 20h24M12 28h16M16 12h16a4 4 0 0 1 4 4v20a4 4 0 0 1-4 4H16a4 4 0 0 1-4-4V16a4 4 0 0 1 4-4z"/>`) {
+  return `
+    <div style="text-align:center; padding:36px 16px; color:var(--muted);">
+      <svg width="52" height="52" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 12px; opacity:0.5; color:var(--accent);">
+        ${svgPath}
+      </svg>
+      <div style="font-family:var(--display); font-size:16px; font-weight:600; color:var(--fg); margin-bottom:4px;">${esc(title)}</div>
+      <div style="font-size:13px;">${esc(subtitle)}</div>
+    </div>
+  `;
+}
+
+// Pure-JS fallback cryptographic hash for file:// contexts where crypto.subtle is unavailable
+function simpleHash(str, salt = "solace_salt_v2") {
+  let hash = 0;
+  const combined = str + salt;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return "h_" + Math.abs(hash).toString(16) + "_" + combined.length;
+}
+
+// Consistent hashed PIN generation supporting crypto.subtle with reliable fallback
+async function hashPin(pin, salt = "solace_salt_v2") {
+  if (!pin) return "";
+  try {
+    if (window.crypto && window.crypto.subtle) {
+      const msgUint8 = new TextEncoder().encode(pin + salt);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) {
+    // Fallback if subtle crypto fails in file://
+  }
+  return simpleHash(pin, salt);
+}
+
+function emptyState() {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    name: "", accent: "blush", night: true, extraDebt: 0, debtFocus: "avalanche", view: "dashboard", currency: "USD",
+    pinHash: "", lastBackup: null, expectedIncome: {}, monthNotes: {}, dayNotes: {},
+    transactions: [], assets: [], debts: [], events: [],
+    envelopes: [{id:uid(),name:"Housing",budget:0},{id:uid(),name:"Groceries",budget:0}],
+    funds: [], goals: [], snapshots: []
+  };
+}
+
+function loadDemoData() {
+  const y=new Date().getFullYear(), m=String(new Date().getMonth()+1).padStart(2,"0"), base=`${y}-${m}`;
+  const t=(type,amount,name,category,day)=>({id:uid(),type,amount,name,category,date:`${base}-${String(day).padStart(2,"0")}`});
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    name: "Jordan", accent: "blush", night: true, extraDebt: 150, debtFocus: "avalanche", view: "dashboard", currency: "USD",
+    pinHash: "", lastBackup: today(), expectedIncome: {[base]:4200}, monthNotes: {[base]:"Rent is covered. Extra toward Visa this month."}, dayNotes: {},
+    transactions: [t("income",2100,"Paycheck","Income",1),t("income",2100,"Paycheck","Income",15),t("expense",1450,"Rent","Rent / Mortgage",1),t("expense",105,"Electric","Utilities",4),t("expense",18,"Streaming","Subscriptions",6),t("expense",86,"Groceries","Groceries",8),t("expense",45,"Gym","Health & Fitness",12),t("expense",42,"Coffee","Coffee",18),t("expense",140,"Transit","Transportation",20),t("expense",220,"Dining","Dining Out",22)],
+    assets: [{id:uid(),name:"Checking",value:4200,kind:"Cash"},{id:uid(),name:"High-yield savings",value:9000,kind:"Cash"},{id:uid(),name:"Brokerage",value:18600,kind:"Investment"},{id:uid(),name:"Car",value:11200,kind:"Vehicle"}],
+    debts: [{id:uid(),name:"Visa credit card",balance:3200,min:150,apr:22.9},{id:uid(),name:"Car loan",balance:12800,min:310,apr:6.5},{id:uid(),name:"Student loan",balance:9400,min:120,apr:4.5}],
+    events: [{id:uid(),name:"Paycheck",amount:2100,day:1,kind:"payday"},{id:uid(),name:"Rent due",amount:1450,day:1,kind:"bill"},{id:uid(),name:"Car insurance",amount:120,day:5,kind:"bill"},{id:uid(),name:"Visa card",amount:150,day:8,kind:"bill"},{id:uid(),name:"Car loan",amount:310,day:8,kind:"bill"},{id:uid(),name:"Student loan",amount:120,day:8,kind:"bill"},{id:uid(),name:"Internet",amount:60,day:10,kind:"bill"},{id:uid(),name:"Paycheck",amount:2100,day:15,kind:"payday"},{id:uid(),name:"Gym membership",amount:45,day:25,kind:"bill"}],
+    envelopes: ["Rent / Mortgage|1450","Utilities|180","Groceries|420","Dining Out|180","Coffee|45","Transportation|140","Subscriptions|45","Health & Fitness|45"].map(s=>{const [name,budget]=s.split("|");return {id:uid(),name,budget:+budget}}),
+    funds: [{id:uid(),name:"Emergency fund",saved:2400,target:6000,due:`${y+1}-06-01`},{id:uid(),name:"Portugal trip",saved:1200,target:3000,due:`${y+1}-06-01`},{id:uid(),name:"House down payment",saved:5400,target:20000,due:`${y+2}-01-01`}],
+    goals: [{id:uid(),name:"Pay off the Visa card",status:"progress",due:`${y}-12-31`,note:"Extra on top of the minimum."},{id:uid(),name:"Build a 3-month emergency fund",status:"progress",due:`${y+1}-06-01`,note:""},{id:uid(),name:"Save for the Portugal trip",status:"progress",due:`${y+1}-06-01`,note:"Flights are booked for June."}],
+    snapshots: [{date:`${y}-01-01`,value:8200},{date:`${y}-02-01`,value:9100},{date:`${y}-03-01`,value:10400},{date:`${y}-04-01`,value:11850},{date:`${y}-05-01`,value:12600}]
+  };
+}
+
+// Fully synchronous initial load with synchronous legacy PIN migration
+function load() {
+  try {
+    if (!localStorage.getItem(KEY) && localStorage.getItem(LEGACY_KEY)) {
+      const legacyData = localStorage.getItem(LEGACY_KEY);
+      localStorage.setItem(KEY, legacyData);
+    }
+
+    const r = localStorage.getItem(KEY);
+    if (r) {
+      const p = JSON.parse(r);
+      const def = emptyState();
+      
+      let resolvedPinHash = typeof p.pinHash === "string" ? p.pinHash : "";
+      
+      let needsSave = false;
+      if (!resolvedPinHash && p.pin && typeof p.pin === "string" && p.pin.length === 4) {
+        resolvedPinHash = simpleHash(p.pin);
+        delete p.pin;
+        needsSave = true;
+      }
+
+      const stateObj = {
+        schemaVersion: SCHEMA_VERSION,
+        name: typeof p.name === "string" ? p.name : def.name,
+        accent: typeof p.accent === "string" ? p.accent : def.accent,
+        night: typeof p.night === "boolean" ? p.night : def.night,
+        extraDebt: typeof p.extraDebt === "number" ? p.extraDebt : def.extraDebt,
+        debtFocus: typeof p.debtFocus === "string" ? p.debtFocus : def.debtFocus,
+        view: typeof p.view === "string" ? p.view : def.view,
+        currency: typeof p.currency === "string" ? p.currency : def.currency,
+        pinHash: resolvedPinHash,
+        lastBackup: typeof p.lastBackup === "string" ? p.lastBackup : null,
+        expectedIncome: p.expectedIncome && typeof p.expectedIncome === "object" ? p.expectedIncome : def.expectedIncome,
+        monthNotes: p.monthNotes && typeof p.monthNotes === "object" ? p.monthNotes : def.monthNotes,
+        dayNotes: p.dayNotes && typeof p.dayNotes === "object" ? p.dayNotes : def.dayNotes,
+        transactions: Array.isArray(p.transactions) ? p.transactions : def.transactions,
+        assets: Array.isArray(p.assets) ? p.assets : def.assets,
+        debts: Array.isArray(p.debts) ? p.debts : def.debts,
+        events: Array.isArray(p.events) ? p.events : def.events,
+        envelopes: Array.isArray(p.envelopes) ? p.envelopes : def.envelopes,
+        funds: Array.isArray(p.funds) ? p.funds : def.funds,
+        goals: Array.isArray(p.goals) ? p.goals : def.goals,
+        snapshots: Array.isArray(p.snapshots) ? p.snapshots : def.snapshots
+      };
+
+      if (needsSave) {
+        localStorage.setItem(KEY, JSON.stringify(stateObj));
+      }
+
+      return stateObj;
+    }
+  } catch (e) {
+    console.error("Failed to load state, defaulting to empty state:", e);
+  }
+  if (window.SOLACE_DEMO_MODE) return loadDemoData();
+  return emptyState();
+}
+
+let S = load();
+
+function save() {
+  try {
+    const persist = {};
+    Object.keys(S).forEach(k => { if (k[0] !== "_" && k !== "pin") persist[k] = S[k]; });
+    const jsonStr = JSON.stringify(persist);
+    
+    if (jsonStr.length > 4 * 1024 * 1024) {
+      toast("Warning: Local storage capacity is getting high.");
+    }
+
+    localStorage.setItem(KEY, jsonStr);
+    applyTheme();
+    render();
+  } catch (e) {
+    toast("Error saving data. Storage might be full.");
+  }
+}
+
+function asDate(v) {
+  const d = v instanceof Date ? v : new Date(v || Date.now());
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+function applyTheme() {
+  document.documentElement.classList.toggle("light", !S.night);
+  document.documentElement.dataset.accent = S.accent;
+  document.querySelectorAll(".themebtn").forEach(b => { b.textContent = S.night ? "Dark" : "Light"; });
+  document.body.setAttribute("data-print-date", new Date().toLocaleDateString());
+}
+
+function toast(m) {
+  const t = document.getElementById("toast");
+  t.hidden = false;
+  t.textContent = m;
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.hidden = true, 2500);
+}
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[c]));
+}
+
+const sum = (a, f) => a.reduce((n, x) => n + f(x), 0);
+const nw = () => sum(S.assets, a => a.value) - sum(S.debts, d => d.balance);
+const mtx = k => S.transactions.filter(t => t.date.startsWith(k));
+
+function card(inner) { return `<section class="card">${inner}</section>`; }
+function stat(label, value, hint, tone) { return card(`<p class="lbl">${label}</p><p class="big ${tone || ""}">${value}</p>${hint ? `<p class="hint">${hint}</p>` : ""}`); }
+
+// Custom Confirmation Modal with Focus Return Memory & A11y Trap
+function confirmModal(title, message, onConfirm) {
+  const activeTrigger = document.activeElement;
+  const container = document.getElementById("modal-container");
+  container.innerHTML = `
+    <div class="modal-overlay" id="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-card">
+        <h2 id="modal-title" style="font-family:var(--display);font-size:22px;margin-bottom:8px" tabindex="0">${esc(title)}</h2>
+        <p class="hint" style="font-size:14px;margin-bottom:20px">${esc(message)}</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" id="modal-cancel">Cancel</button>
+          <button class="btn danger" id="modal-ok" style="background:var(--bad);color:var(--surface)">Confirm</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  const cancelBtn = document.getElementById("modal-cancel");
+  const okBtn = document.getElementById("modal-ok");
+  const overlay = document.getElementById("confirm-overlay");
+
+  cancelBtn.focus();
+
+  const focusableEls = [cancelBtn, okBtn];
+  overlay.onkeydown = (e) => {
+    if (e.key === "Escape") {
+      container.innerHTML = "";
+      if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    } else if (e.key === "Tab") {
+      const first = focusableEls[0];
+      const last = focusableEls[focusableEls.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        last.focus();
+        e.preventDefault();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        first.focus();
+        e.preventDefault();
+      }
+    }
+  };
+
+  cancelBtn.onclick = () => { 
+    container.innerHTML = ""; 
+    if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+  };
+  overlay.onclick = (e) => { 
+    if(e.target.id === "confirm-overlay") {
+      container.innerHTML = "";
+      if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    }
+  };
+  okBtn.onclick = () => {
+    container.innerHTML = "";
+    if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    onConfirm();
+  };
+}
+
+// Generic Edit Modal Dialog with Focus Return Memory & A11y Trap
+function openEditModal(title, fields, onSubmit) {
+  const activeTrigger = document.activeElement;
+  const container = document.getElementById("modal-container");
+  const fieldsHtml = fields.map(f => `
+    <div style="margin-bottom:12px">
+      <label class="lbl" style="display:block;margin-bottom:4px" for="edit_${f.id}">${esc(f.label)}</label>
+      ${f.type === 'select' 
+        ? `<select class="field" id="edit_${f.id}">${f.options.map(o => `<option value="${o.value}" ${o.value === f.value ? 'selected' : ''}>${esc(o.label)}</option>`).join("")}</select>`
+        : f.type === 'textarea'
+          ? `<textarea class="field" id="edit_${f.id}">${esc(f.value != null ? f.value : '')}</textarea>`
+          : `<input class="field" id="edit_${f.id}" type="${f.type || 'text'}" value="${esc(f.value != null ? f.value : '')}" ${f.step ? `step="${f.step}"` : ''}>`
+      }
+    </div>
+  `).join("");
+
+  container.innerHTML = `
+    <div class="modal-overlay" id="edit-overlay" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+      <div class="modal-card">
+        <h2 id="edit-modal-title" style="font-family:var(--display);font-size:22px;margin-bottom:12px" tabindex="0">${esc(title)}</h2>
+        <div class="formgrid">${fieldsHtml}</div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+          <button class="btn ghost" id="edit-cancel">Cancel</button>
+          <button class="btn" id="edit-save">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const cancelBtn = document.getElementById("edit-cancel");
+  const saveBtn = document.getElementById("edit-save");
+  const overlay = document.getElementById("edit-overlay");
+  const firstInput = overlay.querySelector("input, select, textarea");
+
+  if(firstInput) firstInput.focus();
+
+  const focusable = Array.from(overlay.querySelectorAll("input, select, textarea, button"));
+  overlay.onkeydown = (e) => {
+    if (e.key === "Escape") {
+      container.innerHTML = "";
+      if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    } else if (e.key === "Tab") {
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        last.focus();
+        e.preventDefault();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        first.focus();
+        e.preventDefault();
+      }
+    }
+  };
+
+  cancelBtn.onclick = () => { 
+    container.innerHTML = ""; 
+    if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+  };
+  overlay.onclick = (e) => { 
+    if(e.target.id === "edit-overlay") {
+      container.innerHTML = "";
+      if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    }
+  };
+  saveBtn.onclick = () => {
+    const values = {};
+    fields.forEach(f => {
+      const el = document.getElementById(`edit_${f.id}`);
+      values[f.id] = f.type === 'number' ? (+el.value || 0) : el.value;
+    });
+    container.innerHTML = "";
+    if (activeTrigger && typeof activeTrigger.focus === "function") activeTrigger.focus();
+    onSubmit(values);
+  };
+}
+
+// Line Chart Engine
+function buildSvgLineChart(data, height=140) {
+  if(!data || data.length === 0) return emptyStateBox("No trend data yet", "Record snapshots over time to watch your net worth grow.", `<path d="M4 36l10-10 8 8 16-20 6 6"/>`);
+  if(data.length === 1) data = [{label: 'Start', value: data[0].value}, data[0]]; 
+  
+  const values = data.map(d => d.value);
+  const min = Math.min(...values, 0); 
+  const max = Math.max(...values, 1);
+  const range = max - min || 1;
+  const padY = 20;
+  
+  const getY = (v) => height - padY - ((v - min) / range) * (height - padY * 2);
+  const getSvgX = (i) => (i / (data.length - 1)) * 1000;
+  
+  let pathD = data.map((d, i) => `${i===0?'M':'L'} ${getSvgX(i)},${getY(d.value)}`).join(" ");
+  let areaD = `${pathD} L 1000,${height} L 0,${height} Z`;
+  
+  let html = `<div style="position:relative; width:100%; height:${height}px;">`;
+  html += `<svg width="100%" height="${height}" viewBox="0 0 1000 ${height}" preserveAspectRatio="none" style="position:absolute; inset:0; overflow:visible; z-index:1">`;
+  if(min < 0) {
+    const zY = getY(0);
+    html += `<line x1="0" y1="${zY}" x2="1000" y2="${zY}" stroke="var(--line)" stroke-width="1" stroke-dasharray="4 4" />`;
+  }
+  html += `<path d="${areaD}" fill="var(--accent)" opacity="0.1" />`;
+  html += `<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" />`;
+  html += `</svg>`;
+  
+  data.forEach((d, i) => {
+    const leftPct = (i / (data.length - 1)) * 100;
+    const topPx = getY(d.value);
+    const color = d.value >= 0 ? 'var(--accent)' : 'var(--bad)';
+    html += `
+      <div class="chart-hover chart-dot" data-tip="${esc(d.label)}: ${money(d.value)}" 
+           style="left:${leftPct}%; top:${topPx}px; background:${color};">
+      </div>
+      <div style="position:absolute; left:${leftPct}%; bottom:-24px; transform:translateX(-50%); font-size:11px; color:var(--muted); white-space:nowrap;">
+        ${esc(d.label)}
+      </div>
+    `;
+  });
+  html += `</div><div style="height:32px"></div>`;
+  return html;
+}
+
+// Circular Chart Engine (Pie/Donut)
+function buildSvgChart(type, data, size=140) {
+  const activeData = data.filter(d => d.value > 0);
+  const total = sum(activeData, d => d.value);
+  if(!total) return emptyStateBox("No data", "Log transactions or spending to populate charts.", `<circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="6 6"/>`);
+
+  const r = type === 'pie' ? 25 : 40;
+  const c = 2 * Math.PI * r;
+  const sw = type === 'pie' ? 50 : 16;
+  
+  let html = `<svg width="${size}" height="${size}" viewBox="0 0 100 100" style="transform: rotate(-90deg); border-radius:50%; overflow:visible">`;
+  let offset = 0;
+  
+  activeData.forEach(d => {
+    const pct = d.value / total;
+    const dashval = pct * c;
+    html += `<circle cx="50" cy="50" r="${r}" fill="none" stroke="${d.color}" stroke-width="${sw}" stroke-dasharray="${dashval} ${c}" stroke-dashoffset="${-offset}" class="chart-hover" data-tip="${esc(d.label)}: ${money(d.value)}" />`;
+    offset += dashval;
+  });
+  html += `</svg>`;
+  return `<div style="display:flex;justify-content:center;align-items:center;height:${size}px">${html}</div>`;
+}
+
+function buildLegend(data) {
+  const activeData = data.filter(d => d.value > 0);
+  if(!activeData.length) return "";
+  return `<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:20px">` +
+    activeData.map(d => `<div style="display:flex;align-items:center;gap:6px;font-size:13px"><i style="width:10px;height:10px;border-radius:99px;background:${d.color};display:inline-block"></i>${esc(d.label)}</div>`).join("") +
+  `</div>`;
+}
+
+function navHtml(){
+  return NAV.map(([id,label])=>`<button data-v="${id}" class="${S.view===id?"on":""}">${label}</button>`).join("");
+}
+
+document.getElementById("nav").innerHTML = navHtml();
+document.getElementById("drawerNav").innerHTML = navHtml();
+
+function bindNav(root){
+  root.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{ S.view=b.dataset.v; document.getElementById("drawer").classList.remove("open"); save(); });
+}
+
+// Debt Payoff Simulator with Safeguards against Infinite Loops
+function simulateFor(focusType){
+  let debts = S.debts.map(d => ({ ...d, bal: d.balance, paid: false, month: 0 }));
+  debts.sort((a,b) => focusType === "snowball" ? a.bal - b.bal : b.apr - a.apr);
+  let extra = Math.max(0, +S.extraDebt || 0), month = 0, interest = 0;
+  
+  const totalMin = sum(debts, d => d.min);
+  const totalBal = sum(debts, d => d.bal);
+  if (totalBal > 0 && totalMin === 0 && extra === 0) {
+    return { month: 999, interest: 0, debts, stalled: true };
+  }
+
+  let lastBal = totalBal;
+  while(debts.some(d => d.bal > 0.5) && month < 480){
+    month++;
+    debts.forEach(d => { if(d.bal > 0){ const i = d.bal * (d.apr / 100 / 12); d.bal += i; interest += i; }});
+    debts.forEach(d => { if(d.bal > 0) d.bal -= Math.min(d.min, d.bal); });
+    const first = debts.find(d => d.bal > 0.5);
+    if(first) first.bal -= Math.min(extra, first.bal);
+    debts.forEach(d => { if(!d.paid && d.bal <= 0.5){ d.paid = true; d.month = month; d.bal = 0; extra += d.min; }});
+
+    const currentTotalBal = sum(debts, d => d.bal);
+    if (month % 12 === 0) {
+      if (currentTotalBal >= lastBal && extra === 0) {
+        return { month: 999, interest, debts, stalled: true };
+      }
+      lastBal = currentTotalBal;
+    }
+  }
+  return { month: month >= 480 ? 480 : month, interest, debts, stalled: false };
+}
+
+const views={
+  dashboard(){
+    const currentNw = Math.round(nw());
+    const pts = [...S.snapshots.slice(-5), {date: today(), value: currentNw}];
+    
+    const lineData = pts.map((p, i) => {
+      let label = "Now";
+      if (i !== pts.length - 1) {
+        const d = new Date(p.date);
+        label = MONTHS[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+      }
+      return { label, value: p.value };
+    });
+
+    const key = mk(), txs = mtx(key);
+    const income = sum(txs.filter(t=>t.type==="income"),t=>t.amount);
+    const spend = sum(txs.filter(t=>t.type==="expense"),t=>t.amount);
+    const maxFlow = Math.max(income, spend, 1);
+    
+    const flowChart = (income === 0 && spend === 0) ? emptyStateBox("No cash flow this month", "Log income or expenses to see your monthly flow.") : `<div style="display:flex;gap:12px;height:140px;align-items:flex-end;padding-top:10px">
+      <div style="flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center">
+        <div class="chart-hover" style="width:80%;height:${(income/maxFlow)*100}%;background:var(--good);border-radius:6px 6px 0 0" data-tip="Income: ${money(income)}"></div>
+      </div>
+      <div style="flex:1;height:100%;display:flex;align-items:flex-end;justify-content:center">
+        <div class="chart-hover" style="width:80%;height:${(spend/maxFlow)*100}%;background:var(--accent);border-radius:6px 6px 0 0" data-tip="Spent: ${money(spend)}"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-around;margin-top:8px">
+      <span class="hint" style="color:var(--good)">In</span>
+      <span class="hint" style="color:var(--accent)">Out</span>
+    </div>`;
+
+    const by=new Map(); txs.filter(t=>t.type==="expense").forEach(t=>by.set(t.category,(by.get(t.category)||0)+t.amount));
+    const cats=[...by.entries()].sort((a,b)=>b[1]-a[1]);
+    const palette = ["var(--accent)", "var(--good)", "#7eabd4", "#d4a06a", "#a99bd4", "var(--bad)", "#8eae86"];
+    const pieData = cats.slice(0,6).map(([label, value], i) => ({label, value, color: palette[i%palette.length]}));
+    if(cats.length > 6) pieData.push({label: "Other", value: sum(cats.slice(6), ([,v])=>v), color: "var(--muted)"});
+
+    const assets = sum(S.assets, a=>a.value);
+    const debts = sum(S.debts, d=>d.balance);
+    const donutData = [
+      {label: "Assets", value: assets, color: "var(--good)"},
+      {label: "Liabilities", value: debts, color: "var(--bad)"}
+    ];
+
+    return `<h1>Dashboard</h1><p class="sub">Your money at a glance.</p>
+      <div class="grid g3">
+        ${stat("Net worth", money(currentNw), "Assets minus debts")}
+        ${stat("In this month", money(income), "", "good")}
+        ${stat("Out this month", money(spend))}
+      </div>
+      <div class="grid g2" style="margin-top:12px">
+        ${card(`<h2>Net Worth Trend</h2><div style="margin-top:30px">${buildSvgLineChart(lineData, 140)}</div>`)}
+        ${card(`<h2>Cash Flow (${MONTHS[new Date().getMonth()]})</h2>${flowChart}`)}
+      </div>
+      <div class="grid g2" style="margin-top:12px">
+        ${card(`<h2>Spending Breakdown</h2><div style="margin-top:24px">${buildSvgChart('pie', pieData, 140)}${buildLegend(pieData)}</div>`)}
+        ${card(`<h2>Assets vs Liabilities</h2><div style="margin-top:24px">${buildSvgChart('donut', donutData, 140)}${buildLegend(donutData)}</div>`)}
+      </div>`;
+  },
+  today(){
+    const key=mk(), txs=mtx(key);
+    const income=sum(txs.filter(t=>t.type==="income"),t=>t.amount);
+    const spend=sum(txs.filter(t=>t.type==="expense"),t=>t.amount);
+    const mins=sum(S.debts,d=>d.min);
+    const day=new Date().getDate();
+    const ahead=sum(S.events.filter(e=>e.kind==="bill"&&e.day>=day),e=>e.amount);
+    const safe=income-spend-mins;
+    const saved=sum(S.funds,f=>f.saved), owed=sum(S.debts,d=>d.balance);
+    const up=[...S.events].sort((a,b)=>a.day-b.day).slice(0,6);
+    return `<h1>Hello${S.name?", "+esc(S.name):""}.</h1><p class="sub">Here is the shape of your money today.</p>
+    <div class="grid g4">${stat("Net worth",money(nw()),"Assets minus what you still owe")}${stat("Safe to spend",money(safe),"This month in − out − debt minimums",safe>=0?"good":"bad")}${stat("Still owed",money(owed),S.debts.length+" debts · mins "+money(mins))}</div>
+    <div class="grid g3" style="margin-top:12px">${stat("Saved across funds",money(saved),S.funds.length+" funds")}${stat("Bills still ahead",money(ahead),"Remaining this month")}${stat("Goals in motion",String(S.goals.filter(g=>g.status==="progress").length),S.goals.length+" total")}</div>
+    <div style="height:12px"></div>${card(`<h2>Coming up</h2>`+ (up.map(e=>`<div class="row"><span>Day ${e.day} · ${esc(e.name)}</span><span class="${e.kind==="payday"?"good":""}">${money(e.amount)}</span></div>`).join("")||emptyStateBox("No upcoming bills", "Head to Calendar to schedule paydays and bills.", `<path d="M8 7v18M4 11h8M20 7v18M16 11h8"/>`)))}
+    <div style="height:12px"></div>${card(`<h2>Notes for this month</h2><textarea class="field" id="mnote" style="margin-top:10px" placeholder="Jot down quick reminders for this month...">${esc(S.monthNotes[key]||"")}</textarea>`)}`;
+  },
+  calendar(){
+    const c = asDate(S._cal || new Date());
+    S._cal = new Date(c.getFullYear(), c.getMonth(), 1);
+    const y=S._cal.getFullYear(), m=S._cal.getMonth(), days=new Date(y,m+1,0).getDate();
+    const start=(new Date(y,m,1).getDay()+6)%7;
+    const sel=S._day||new Date().getDate();
+    let cells="";
+    for(let i=0;i<start;i++) cells+=`<div></div>`;
+    for(let d=1;d<=days;d++){
+      const dots=S.events.filter(e=>e.day===d).slice(0,3).map(e=>`<b class="${e.kind==="payday"?"pay":""}"></b>`).join("");
+      cells+=`<button class="day ${d===sel?"on":""}" data-day="${d}">${d}<div class="dots">${dots}</div></button>`;
+    }
+    const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(sel).padStart(2,"0")}`;
+    const on=S.events.filter(e=>e.day===sel);
+    const monthItems=[...S.events].sort((a,b)=>a.day-b.day);
+    return `<div class="row" style="border:0"><div><h1>Calendar</h1><p class="sub">Bills and paydays that repeat each month.</p></div>
+      <div class="actions"><button class="btn ghost" id="prev">Prev</button><b>${MONTHS[m]} ${y}</b><button class="btn ghost" id="next">Next</button></div></div>
+      ${card(`<div class="cal">${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"].map(d=>`<div class="hd">${d}</div>`).join("")}${cells}</div>`)}
+      <div style="height:12px"></div>${card(`<h2>${MONTHS[m]} schedule</h2>`+(monthItems.map(e=>`<div class="row"><span>Day ${e.day} · ${esc(e.name)} <span class="hint">(${e.kind})</span></span><span>${money(e.amount)} <button data-edit-ev="${e.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-ev="${e.id}" class="btn ghost" style="height:32px">Remove</button></span></div>`).join("")||emptyStateBox("No recurring schedule", "Add bills or paydays using the day selector below.", `<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>`)))}
+      <div class="grid g2" style="margin-top:12px">
+        ${card(`<h2>Day ${sel}</h2>`+(on.map(e=>`<div class="row"><span>${esc(e.name)}</span><span>${money(e.amount)} <button data-del-ev="${e.id}" class="btn ghost" style="height:32px">Remove</button></span></div>`).join("")||`<p class="empty" style="text-align:left;padding:12px 0;color:var(--muted)">Nothing scheduled on this day.</p>`)+`
+          <div class="formgrid" style="margin-top:12px"><input class="field" id="evname" placeholder="Event Name"><input class="field" id="evamt" type="number" placeholder="Amount" step="any">
+          <select class="field" id="evkind"><option value="bill">Bill</option><option value="payday">Payday</option></select>
+          <button class="btn" id="addev" style="margin-top:4px">Add on day ${sel}</button></div>`)}
+        ${card(`<h2>Note for ${MONTHS[m]} ${sel}</h2><textarea class="field" id="dnote" style="margin-top:10px" placeholder="Add day-specific note...">${esc(S.dayNotes[iso]||"")}</textarea>`)}
+      </div>`;
+  },
+  envelopes(){
+    const ym=S._ym||mk(); S._ym=ym; const [year,mon]=ym.split("-").map(Number);
+    const txs=mtx(ym);
+    const income=sum(txs.filter(t=>t.type==="income"),t=>t.amount);
+    const spend=sum(txs.filter(t=>t.type==="expense"),t=>t.amount);
+    const planned=sum(S.envelopes,e=>e.budget);
+    const pills=MONTHS.map((l,i)=>{const k=`${year}-${String(i+1).padStart(2,"0")}`;return `<button data-ym="${k}" class="${k===ym?"on":""}">${l}</button>`}).join("");
+    const list=S.envelopes.length ? S.envelopes.map(env=>{
+      const spent=sum(txs.filter(t=>t.type==="expense"&&t.category===env.name),t=>t.amount);
+      const pct=env.budget>0?Math.min(100,Math.round(spent/env.budget*100)):spent?100:0;
+      return card(`<div class="row" style="border:0;padding-top:0"><div><b>${esc(env.name)}</b><p class="hint">${money(spent)} spent · ${money(Math.max(0,env.budget-spent))} left</p></div><div><button data-edit-env="${env.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-env="${env.id}" class="btn ghost" style="height:32px">Delete</button></div></div>
+        <div class="row" style="border:0"><input class="field" style="max-width:120px" data-bud="${env.id}" type="number" value="${env.budget||""}" step="any"><div class="bar" style="flex:1"><i style="width:${pct}%"></i></div><span class="hint">${pct}%</span></div>`);
+    }).join(`<div style="height:10px"></div>`) : emptyStateBox("No envelopes yet", "Create budgeting categories below to allocate your income.", `<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>`);
+    return `<h1>${MONTHS[mon-1]} ${year}</h1><p class="sub">Give every dollar an envelope before it leaves.</p>
+      <div class="months">${pills}</div>
+      <div class="grid g3" style="margin:12px 0">${stat("Income",money(income),"", "good")}${stat("Total spending",money(spend))}${stat("Left after plan",money((S.expectedIncome[ym]||income)-planned),"Planned "+money(planned))}</div>
+      ${card(`<p class="lbl">Expected income this month</p><input class="field" id="expect" type="number" style="max-width:220px;margin-top:8px" value="${S.expectedIncome[ym]||""}" step="any">`)}
+      <div style="height:12px"></div>${card(`<h2>Quick add</h2><div class="grid g2" style="margin-top:10px">
+        <div class="formgrid"><p class="lbl">Income</p><input class="field" id="iname" value="Paycheck"><input class="field" id="iamt" type="number" placeholder="Amount" step="any"><button class="btn" id="addin">Add income</button></div>
+        <div class="formgrid"><p class="lbl">Spending</p><select class="field" id="ecat">${S.envelopes.map(e=>`<option>${esc(e.name)}</option>`).join("")}</select><input class="field" id="ename" placeholder="Note"><input class="field" id="eamt" type="number" placeholder="Amount" step="any"><button class="btn" id="addsp">Add spending</button></div>
+      </div>`)}
+      <div style="height:12px"></div>${list}
+      <div class="actions"><input class="field" id="newenv" placeholder="New envelope name" style="max-width:280px"><button class="btn" id="addenv">Add Envelope</button></div>`;
+  },
+  ledger(){
+    const rows=[...S.transactions].sort((a,b)=>b.date.localeCompare(a.date));
+    return `<h1>Ledger</h1><p class="sub">Every dollar in and out, searchable across name, category, amount, date, and type.</p>
+      ${card(`<div class="formgrid"><select class="field" id="ltype"><option value="expense">Expense</option><option value="income">Income</option></select>
+        <input class="field" id="lname" placeholder="Description / Name"><input class="field" id="lcat" placeholder="Category"><input class="field" id="lamt" type="number" placeholder="Amount" step="any"><input class="field" id="ldate" type="date" value="${today()}"><button class="btn" id="log">Log entry</button></div>`)}
+      <div style="display:flex;gap:8px;margin:12px 0;align-items:center;flex-wrap:wrap">
+        <input class="field" id="searchTx" placeholder="Search entries by name, category, amount, date, type..." value="${esc(S._q||"")}" style="flex:1;min-width:200px">
+        <label class="btn ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer">Import CSV<input id="impCsv" type="file" accept=".csv" hidden></label>
+      </div>
+      ${card(rows.length ? rows.map(t=>`<div class="row tx-row" data-search="${esc((t.name+" "+t.category+" "+t.amount+" "+t.date+" "+t.type).toLowerCase())}"><div><b>${esc(t.name)}</b><p class="hint">${t.date} · ${esc(t.category)} · <span style="text-transform:uppercase">${t.type}</span></p></div><span>${t.type==="income"?"+":"−"}${money(t.amount)} <button data-edit-tx="${t.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-tx="${t.id}" class="btn ghost" style="height:32px">Delete</button></span></div>`).join("") : emptyStateBox("No ledger entries", "Log your first income or expense above, or import a CSV ledger.", `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>`))}`;
+  },
+  paycheck(){
+    const rows=[...S.envelopes.map(e=>e.name),"Extra debt","Savings"];
+    const alloc=S._alloc||{};
+    const total=+(S._pay||2100);
+    const used=Object.values(alloc).reduce((n,v)=>n+(+v||0),0);
+    const unassigned = total - used;
+    return `<h1>Paycheck</h1><p class="sub">Split one check across envelopes before you spend it.</p>
+      ${card(`<p class="lbl">Amount</p><input class="field" id="payamt" type="number" value="${total}" style="max-width:220px;margin:8px 0 12px" step="any">
+        ${rows.map(n=>`<div class="row"><span>${esc(n)}</span><input class="field" data-alloc="${esc(n)}" type="number" placeholder="0" value="${alloc[n]||""}" style="max-width:140px" step="any"></div>`).join("")}
+        <div class="row"><div><p class="lbl">Unassigned</p><p class="big ${unassigned<0?"bad":"good"}">${money(unassigned)}</p>${unassigned<0?`<p class="hint bad">Warning: Allocated amount exceeds total paycheck!</p>`:""}</div><button class="btn" id="applypay">Apply paycheck</button></div>`)}`;
+  },
+  worth(){
+    const assets=sum(S.assets,a=>a.value), debts=sum(S.debts,d=>d.balance);
+    const recentSnaps = S.snapshots.slice(-11);
+    const pts = [...recentSnaps.map(p=>p.value), Math.round(nw())];
+    
+    const lineData = pts.map((p, i) => {
+      let label = "Now";
+      if (i !== pts.length - 1) {
+        const d = new Date(recentSnaps[i].date);
+        label = MONTHS[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
+      }
+      return { label, value: p };
+    });
+
+    return `<h1>Net worth</h1><p class="sub">What you own, what you owe, and the gap between them.</p>
+      <div class="grid g3">${stat("Assets",money(assets),"","good")}${stat("Liabilities",money(debts),"","bad")}${stat("Net worth",money(assets-debts))}</div>
+      <div style="height:12px"></div>${card(`<div style="margin-top:30px">${buildSvgLineChart(lineData, 160)}</div>`)}
+      <div class="grid g2" style="margin-top:12px">
+        ${card(`<h2 class="good">Assets</h2>`+(S.assets.length ? S.assets.map(a=>`<div class="row"><span>${esc(a.name)} <span class="hint">${esc(a.kind)}</span></span><span>${money(a.value)} <button data-edit-as="${a.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-as="${a.id}" class="btn ghost" style="height:32px">Delete</button></span></div>`).join("") : emptyStateBox("No assets recorded", "Add cash, investments, or property below.", `<path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`))+`
+          <div class="formgrid" style="margin-top:12px"><input class="field" id="an" placeholder="Asset Name"><input class="field" id="av" type="number" placeholder="Value" step="any">
+          <select class="field" id="ak">${["Cash","Investment","Property","Vehicle","Other"].map(k=>`<option>${k}</option>`).join("")}</select><button class="btn" id="adda" style="margin-top:4px">Add Asset</button></div>`)}
+        ${card(`<h2 class="bad">Liabilities</h2>`+(S.debts.length ? S.debts.map(d=>`<div class="row"><span>${esc(d.name)} <span class="hint">${d.apr}% APR · min ${money(d.min)}</span></span><span>${money(d.balance)} <button data-edit-db="${d.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-db="${d.id}" class="btn ghost" style="height:32px">Delete</button></span></div>`).join("") : emptyStateBox("No liabilities recorded", "Add credit cards, loans, or mortgages below.", `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`))+`
+          <div class="formgrid" style="margin-top:12px"><input class="field" id="dn" placeholder="Liability Name"><input class="field" id="db" type="number" placeholder="Balance" step="any"><input class="field" id="dm" type="number" placeholder="Min Payment" step="any"><input class="field" id="dr" type="number" placeholder="APR %" step="any"><button class="btn" id="addd" style="margin-top:4px">Add Debt</button></div>`)}
+      </div>
+      <div class="actions"><button class="btn ghost" id="snap">Save today’s net worth snapshot</button></div>`;
+  },
+  debt(){
+    const plan=simulateFor(S.debtFocus);
+    const avPlan=simulateFor("avalanche");
+    const snowPlan=simulateFor("snowball");
+    const diffMonths = snowPlan.month - avPlan.month;
+    const diffInterest = snowPlan.interest - avPlan.interest;
+
+    const total=sum(S.debts,d=>d.balance), mins=sum(S.debts,d=>d.min);
+    const avg=total?sum(S.debts,d=>d.apr*d.balance)/total:0;
+    const start=new Date();
+    
+    let cardsContent = "";
+    if (!S.debts.length) {
+      cardsContent = emptyStateBox("No debts recorded", "Add debts in the Net Worth tab to run payoff simulations.", `<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>`);
+    } else if (plan.stalled) {
+      cardsContent = card(`<p class="empty bad">⚠️ Warning: Minimum payments are zero or insufficient to cover ongoing interest. Debts cannot be paid off with current settings. Increase minimums or extra monthly payments.</p>`);
+    } else {
+      cardsContent = plan.debts.map((d,i)=>{
+        const clear=new Date(start); clear.setMonth(clear.getMonth()+(d.month||plan.month));
+        const orig=S.debts.find(x=>x.id===d.id)?.balance||0;
+        return card(`<div class="row" style="border:0"><div><b>${esc(d.name)}</b> ${i===0?`<span class="btn" style="height:24px;padding:0 8px;font-size:12px">Focus first</span>`:""}<p class="hint">${money(orig)} owed · ${d.apr}% APR · ${money(d.min)}/mo</p></div><span class="hint">Clear ${clear.toLocaleString(undefined,{month:"short",year:"numeric"})}</span></div><p class="hint">Paid off in month ${d.month||"—"}</p>`);
+      }).join(`<div style="height:10px"></div>`);
+    }
+
+    return `<h1>Paying it down</h1><p class="sub">Every balance, and roughly when it is gone.</p>
+      <div class="grid g3">${stat("Still owed",money(total))}${stat("Minimums",money(mins),"Due monthly")}${stat("Avg interest",avg.toFixed(1)+"%")}</div>
+      <div style="height:12px"></div>${card(`<p class="lbl">Focus order</p><div class="actions"><button class="btn ${S.debtFocus==="avalanche"?"":"ghost"}" id="avalanche">Highest interest (Avalanche)</button><button class="btn ${S.debtFocus==="snowball"?"":"ghost"}" id="snowball">Smallest balance (Snowball)</button></div>
+        <p class="lbl" style="margin-top:12px">Extra each month</p><input class="field" id="extra" type="number" value="${S.extraDebt}" style="max-width:160px;margin-top:8px" step="any">
+        <p class="hint" style="margin-top:12px">Debt-free in about <b style="color:var(--fg)">${plan.stalled ? "Never (Stalled)" : plan.month + " months"}</b> · interest along the way ${money(plan.interest)}.</p>
+        ${S.debts.length > 1 && !plan.stalled ? `<div style="margin-top:12px;padding:12px;border-radius:12px;background:var(--surface-2);font-size:13px"><b style="display:block;margin-bottom:4px">Strategy Insight</b>Avalanche saves you <b>${money(Math.abs(diffInterest))}</b> in interest and <b>${Math.abs(diffMonths)} months</b> compared to Snowball.</div>`:""}
+      `)}
+      <div style="height:12px"></div>${cardsContent}`;
+  },
+  savings(){
+    const saved=sum(S.funds,f=>f.saved), target=sum(S.funds,f=>f.target);
+    const now=new Date();
+    const list=S.funds.length ? S.funds.map(f=>{
+      const pct=f.target?Math.min(100,Math.round(f.saved/f.target*100)):0;
+      const due=new Date(f.due);
+      const months=Math.max(1,(due.getFullYear()-now.getFullYear())*12+(due.getMonth()-now.getMonth()));
+      const pace=Math.max(0,(f.target-f.saved)/months);
+      return card(`<div class="row" style="border:0"><div><b>${esc(f.name)}</b><p class="hint">${money(f.saved)} of ${money(f.target)}</p></div><div><button data-edit-fu="${f.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button><button data-del-fu="${f.id}" class="btn ghost" style="height:32px">Delete</button></div></div>
+        <div class="bar"><i style="width:${pct}%"></i></div><p class="hint">${pct}% · about ${money(pace)}/mo to hit ${f.due}</p>
+        <div class="actions"><input class="field" data-addf="${f.id}" type="number" placeholder="Add money" style="max-width:160px" step="any"><button class="btn" data-addf-go="${f.id}">Add</button></div>`);
+    }).join(`<div style="height:10px"></div>`) : emptyStateBox("No savings funds", "Create emergency funds or savings goals below.", `<path d="M19 5h-2V3a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>`);
+    return `<h1>Savings</h1><p class="sub">One fund at a time.</p>
+      <div class="grid g3">${stat("Saved so far",money(saved),"","good")}${stat("Combined target",money(target))}${stat("Overall",target?Math.round(saved/target*100)+"%":"0%")}</div>
+      <div style="height:12px"></div>${list}
+      <div style="height:12px"></div>${card(`<h2>New fund</h2><div class="formgrid" style="margin-top:8px"><input class="field" id="fn" placeholder="Fund Name"><input class="field" id="ft" type="number" placeholder="Target Amount" step="any"><input class="field" id="fd" type="date" value="${new Date().getFullYear()+1}-06-01"><button class="btn" id="addf" style="margin-top:4px">Create Fund</button></div>`)}`;
+  },
+  goals(){
+    const c={not:0,progress:0,done:0}; S.goals.forEach(g=>c[g.status]++);
+    const label={not:"Not started",progress:"In progress",done:"Done"};
+    const list=S.goals.length ? S.goals.map(g=>card(`<div class="row" style="border:0;align-items:flex-start"><div><b>${esc(g.name)}</b><p class="hint">${label[g.status]} · by ${g.due}</p>${g.note?`<p class="hint">${esc(g.note)}</p>`:""}</div>
+      <span><select class="field" data-gst="${g.id}" style="width:auto">${["not","progress","done"].map(s=>`<option value="${s}" ${g.status===s?"selected":""}>${label[s]}</option>`).join("")}</select>
+      <button data-edit-g="${g.id}" class="btn ghost" style="height:32px;margin-right:4px">Edit</button>
+      <button data-del-g="${g.id}" class="btn ghost" style="height:32px">Delete</button></span></div>`)).join(`<div style="height:10px"></div>`) : emptyStateBox("No goals tracked", "Set long-term financial milestones below.", `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>`);
+    return `<h1>Goals</h1><p class="sub">The bigger picture these numbers are working toward.</p>
+      <div class="grid g3">${stat("Not started",c.not)}${stat("In progress",c.progress)}${stat("Done",c.done,"","good")}</div>
+      <div style="height:12px"></div>${list}
+      <div style="height:12px"></div>${card(`<h2>New goal</h2><div class="formgrid" style="margin-top:8px"><input class="field" id="gn" placeholder="Goal Name"><input class="field" id="gd" type="date" value="${new Date().getFullYear()+1}-01-01"><textarea class="field" id="gnote" placeholder="Note / Details"></textarea><button class="btn" id="addg" style="margin-top:4px">Add Goal</button></div>`)}`;
+  },
+  reports(){
+    const now=new Date();
+    const rows=Array.from({length:6},(_,i)=>{
+      const d=new Date(now.getFullYear(), now.getMonth()-(5-i),1);
+      const key=mk(d), txs=mtx(key);
+      return {label:MONTHS[d.getMonth()], income:sum(txs.filter(t=>t.type==="income"),t=>t.amount), spend:sum(txs.filter(t=>t.type==="expense"),t=>t.amount)};
+    });
+    const max=Math.max(...rows.flatMap(r=>[r.income,r.spend]),1);
+    const bars=rows.map(r=>`
+      <div style="flex:1;display:flex;flex-direction:column;gap:3px;align-items:center;height:140px;justify-content:flex-end">
+        <div style="display:flex;width:100%;align-items:flex-end;justify-content:center;gap:4px">
+          <div class="chart-hover" style="flex:1;max-width:30px;height:${r.income/max*100}px;background:var(--good);border-radius:4px 4px 0 0" data-tip="Income: ${money(r.income)}"></div>
+          <div class="chart-hover" style="flex:1;max-width:30px;height:${r.spend/max*100}px;background:var(--accent);border-radius:4px 4px 0 0" data-tip="Spent: ${money(r.spend)}"></div>
+        </div>
+        <div class="hint">${r.label}</div>
+      </div>`).join("");
+    const yi=sum(S.transactions.filter(t=>t.type==="income"&&t.date.startsWith(String(now.getFullYear()))),t=>t.amount);
+    const ys=sum(S.transactions.filter(t=>t.type==="expense"&&t.date.startsWith(String(now.getFullYear()))),t=>t.amount);
+    const by=new Map(); mtx(mk()).filter(t=>t.type==="expense").forEach(t=>by.set(t.category,(by.get(t.category)||0)+t.amount));
+    const cats=[...by.entries()].sort((a,b)=>b[1]-a[1]);
+    const tot=sum(cats,([,v])=>v)||1;
+    return `<h1>Reports</h1><p class="sub">Six months of flow and this year’s totals. Green is income, blush is spending.</p>
+      <div class="grid g3">${stat(now.getFullYear()+" income",money(yi),"","good")}${stat(now.getFullYear()+" spending",money(ys))}${stat("Year net",money(yi-ys),"",yi-ys>=0?"good":"bad")}</div>
+      <div style="height:12px"></div>${card(`<div style="display:flex;justify-content:space-between;align-items:end;gap:8px">${bars}</div>`)}
+      <div style="height:12px"></div>${card(`<h2>Spending this month</h2>`+(cats.length ? cats.map(([n,v])=>`<p class="row" style="border:0"><span>${esc(n)}</span><span class="hint">${money(v)} · ${Math.round(v/tot*100)}%</span></p><div class="bar"><i style="width:${v/tot*100}%"></i></div>`).join("") : emptyStateBox("No spending this month", "Log monthly expenses to see category breakdowns."))) }
+      <div class="actions"><button class="btn ghost" id="printReports">🖨️ Print Reports</button></div>`;
+  },
+  settings(){
+    const colors=[["blush","#e3949f","Blush"],["sage","#8eae86","Sage"],["lavender","#a99bd4","Lavender"],["sky","#7eabd4","Sky"],["clay","#d4a06a","Clay"]];
+    const currencies=["USD","EUR","GBP","CAD","AUD"];
+    const backupStatus = S.lastBackup ? `Last backed up on ${S.lastBackup}` : `⚠️ You haven't exported a backup recently!`;
+    return `<h1>Settings</h1><p class="sub">Make it yours. Data never leaves this browser, and this page needs no internet.</p>
+      ${card(`<h2>Your name</h2><input class="field" id="name" value="${esc(S.name)}" style="margin-top:10px">`)}
+      <div style="height:12px"></div>${card(`<h2>Currency</h2><select class="field" id="currencyPref" style="margin-top:10px">${currencies.map(c=>`<option value="${c}" ${S.currency===c?"selected":""}>${c}</option>`).join("")}</select>`)}
+      <div style="height:12px"></div>${card(`<h2>Colorway</h2><div class="swatches">${colors.map(([id,hex,label])=>`<button class="sw ${S.accent===id?"on":""}" data-accent="${id}"><i style="background:${hex}"></i><span>${label}</span></button>`).join("")}</div>`)}
+      <div style="height:12px"></div>${card(`<div class="row" style="border:0"><div><h2>Night mode</h2><p class="hint">Easier after dark.</p></div><button class="switch ${S.night?"on":""}" id="night" role="switch" aria-checked="${S.night}"><i></i></button></div>`)}
+      <div style="height:12px"></div>${card(`<h2>Privacy PIN</h2><p class="hint">Require a 4-digit code to open Solace.</p>
+        <div style="display:flex;gap:8px;margin-top:12px"><input class="field" id="pinInput" type="password" maxlength="4" placeholder="${S.pinHash?"Change 4-digit PIN":"Set 4-digit PIN (e.g. 1234)"}" style="max-width:220px"><button class="btn" id="savePin">Save PIN</button>${S.pinHash?`<button class="btn danger" id="removePin" style="height:44px">Remove PIN</button>`:""}</div>
+        ${S.pinHash?`<div class="actions" style="margin-top:12px"><button class="btn ghost" id="lockNowBtn">🔒 Lock Solace Now</button></div>`:""}`)}
+      <div style="height:12px"></div>${card(`<h2>Your data & Backup</h2><p class="hint">${backupStatus}</p><div class="actions"><button class="btn ghost" id="exp">Download JSON backup</button><button class="btn ghost" id="expCsv">Export Ledger to CSV</button><label class="btn ghost">Restore from JSON<input id="imp" type="file" accept="application/json" hidden></label></div><div class="actions" style="margin-top:18px"><button class="btn ghost" id="loadDemo">Load Demo Data</button><button class="btn danger" id="wipe">Erase everything</button></div>`)}`;
+  }
+};
+
+function checkLock() {
+  const lockEl = document.getElementById("lock-screen");
+  if(S.pinHash && !window._unlocked) {
+    lockEl.style.display = "block";
+    let entered = "";
+    const renderLock = () => {
+      lockEl.innerHTML = `
+        <div class="lock-overlay">
+          <div class="lock-card">
+            <h2 style="font-family:var(--display);font-size:24px;margin-bottom:4px" tabindex="0">Solace is locked</h2>
+            <p class="hint">Enter your 4-digit PIN</p>
+            <div class="pin-dots" aria-hidden="true">
+              <div class="pin-dot ${entered.length>0?'filled':''}"></div>
+              <div class="pin-dot ${entered.length>1?'filled':''}"></div>
+              <div class="pin-dot ${entered.length>2?'filled':''}"></div>
+              <div class="pin-dot ${entered.length>3?'filled':''}"></div>
+            </div>
+            <div class="pin-grid">
+              ${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(n=>n===""?`<div></div>`:`<button class="pin-btn" data-key="${n}">${n}</button>`).join("")}
+            </div>
+          </div>
+        </div>
+      `;
+      lockEl.querySelectorAll("[data-key]").forEach(btn => {
+        btn.onclick = async () => {
+          const k = btn.dataset.key;
+          if(k === "⌫") {
+            entered = entered.slice(0, -1);
+          } else if(entered.length < 4) {
+            entered += k;
+          }
+          renderLock();
+          if(entered.length === 4) {
+            const hashed = await hashPin(entered);
+            const fallbackHashed = simpleHash(entered);
+            if(hashed === S.pinHash || fallbackHashed === S.pinHash) {
+              window._unlocked = true;
+              lockEl.style.display = "none";
+              render();
+            } else {
+              toast("Incorrect PIN");
+              entered = "";
+              setTimeout(renderLock, 300);
+            }
+          }
+        };
+      });
+    };
+    renderLock();
+    return true;
+  } else {
+    lockEl.style.display = "none";
+    return false;
+  }
+}
+
+function lockApp() {
+  if(!S.pinHash) {
+    toast("Set a PIN in Settings first");
+    return;
+  }
+  window._unlocked = false;
+  render();
+}
+
+function promptPinForAction(callback) {
+  if(!S.pinHash) { callback(); return; }
+  const lockEl = document.getElementById("lock-screen");
+  lockEl.style.display = "block";
+  let entered = "";
+  const renderPrompt = () => {
+    lockEl.innerHTML = `
+      <div class="lock-overlay">
+        <div class="lock-card">
+          <h2 style="font-family:var(--display);font-size:22px;margin-bottom:4px">Confirm your PIN</h2>
+          <p class="hint">Enter current PIN to proceed</p>
+          <div class="pin-dots">
+            <div class="pin-dot ${entered.length>0?'filled':''}"></div>
+            <div class="pin-dot ${entered.length>1?'filled':''}"></div>
+            <div class="pin-dot ${entered.length>2?'filled':''}"></div>
+            <div class="pin-dot ${entered.length>3?'filled':''}"></div>
+          </div>
+          <div class="pin-grid">
+            ${[1,2,3,4,5,6,7,8,9,"",0,"⌫"].map(n=>n===""?`<div></div>`:`<button class="pin-btn" data-key="${n}">${n}</button>`).join("")}
+          </div>
+          <button class="btn ghost" id="cancelPin" style="width:100%;margin-top:16px">Cancel</button>
+        </div>
+      </div>
+    `;
+    lockEl.querySelector("#cancelPin").onclick = () => {
+      lockEl.style.display = "none";
+      window._unlocked = true;
+      render();
+    };
+    lockEl.querySelectorAll("[data-key]").forEach(btn => {
+      btn.onclick = async () => {
+        const k = btn.dataset.key;
+        if(k === "⌫") {
+          entered = entered.slice(0, -1);
+        } else if(entered.length < 4) {
+          entered += k;
+        }
+        renderPrompt();
+        if(entered.length === 4) {
+          const hashed = await hashPin(entered);
+          const fallbackHashed = simpleHash(entered);
+          if(hashed === S.pinHash || fallbackHashed === S.pinHash) {
+            lockEl.style.display = "none";
+            window._unlocked = true;
+            callback();
+          } else {
+            toast("Incorrect PIN");
+            entered = "";
+            setTimeout(renderPrompt, 300);
+          }
+        }
+      };
+    });
+  };
+  renderPrompt();
+}
+
+function render(){
+  if(checkLock()) return;
+  const tip = document.getElementById("global-tip");
+  if(tip) tip.style.opacity = 0;
+  
+  applyTheme();
+  document.getElementById("nav").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.v===S.view));
+  document.getElementById("drawerNav").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.v===S.view));
+  const root=document.getElementById("view");
+  
+  root.innerHTML = `<div class="fade-enter">${views[S.view]()}</div>`;
+  wire(root);
+}
+
+function val(id){ const el=document.getElementById(id); return el?el.value:""; }
+
+function wire(root){
+  // Throttled Card Spotlight Mouse Tracker
+  root.querySelectorAll('.card').forEach(cardEl => {
+    let ticking = false;
+    cardEl.onmousemove = e => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const rect = cardEl.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          cardEl.style.setProperty('--mouse-x', `${x}px`);
+          cardEl.style.setProperty('--mouse-y', `${y}px`);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+  });
+
+  const tip = document.getElementById("global-tip");
+  root.querySelectorAll('[data-tip]').forEach(el => {
+    el.onmousemove = (e) => {
+      tip.textContent = el.dataset.tip;
+      tip.style.opacity = 1;
+      tip.style.left = e.clientX + 'px';
+      tip.style.top = e.clientY + 'px';
+    };
+    el.onmouseleave = () => { tip.style.opacity = 0; };
+  });
+
+  const printReports = document.getElementById("printReports");
+  if(printReports) printReports.onclick = () => window.print();
+
+  const note=document.getElementById("mnote");
+  if(note) note.onchange=()=>{ S.monthNotes[mk()]=note.value; save(); };
+  const dn=document.getElementById("dnote");
+  if(dn) dn.onchange=()=>{
+    const c=S._cal||new Date(); const iso=`${c.getFullYear()}-${String(c.getMonth()+1).padStart(2,"0")}-${String(S._day||new Date().getDate()).padStart(2,"0")}`;
+    S.dayNotes[iso]=dn.value; save();
+  };
+  root.querySelectorAll("[data-day]").forEach(b=>b.onclick=()=>{ S._day=+b.dataset.day; render(); });
+  
+  const prev=document.getElementById("prev"), next=document.getElementById("next");
+  if(prev) prev.onclick=()=>{ 
+    const c = asDate(S._cal); 
+    const target = new Date(c.getFullYear(), c.getMonth() - 1, 1);
+    S._cal = target;
+    const maxDays = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    if((S._day || 1) > maxDays) S._day = maxDays;
+    render(); 
+  };
+  if(next) next.onclick=()=>{ 
+    const c = asDate(S._cal); 
+    const target = new Date(c.getFullYear(), c.getMonth() + 1, 1);
+    S._cal = target;
+    const maxDays = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    if((S._day || 1) > maxDays) S._day = maxDays;
+    render(); 
+  };
+
+  // Calendar Event Deletion & Editing
+  root.querySelectorAll("[data-del-ev]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Event", "Are you sure you want to remove this scheduled event?", () => {
+      S.events=S.events.filter(e=>e.id!==b.dataset.delEv); save(); toast("Event removed");
+    });
+  });
+  root.querySelectorAll("[data-edit-ev]").forEach(b=>b.onclick=()=>{
+    const ev = S.events.find(e=>e.id===b.dataset.editEv);
+    if(!ev) return;
+    openEditModal("Edit Calendar Event", [
+      {id:"name", label:"Event Name", value:ev.name},
+      {id:"amount", label:"Amount", type:"number", step:"any", value:ev.amount},
+      {id:"day", label:"Day of Month (1-31)", type:"number", value:ev.day},
+      {id:"kind", label:"Kind", type:"select", value:ev.kind, options:[{value:"bill", label:"Bill"},{value:"payday", label:"Payday"}]}
+    ], vals => {
+      if(!vals.name || isNaN(vals.amount)) return toast("Invalid values");
+      S.events = S.events.map(e => e.id === ev.id ? {...e, name:vals.name, amount:+vals.amount, day:+vals.day, kind:vals.kind} : e);
+      save(); toast("Event updated");
+    });
+  });
+
+  const addev=document.getElementById("addev");
+  if(addev) addev.onclick=()=>{ 
+    const name=val("evname"), amount=+val("evamt"); 
+    if(!name||!amount) return toast("Enter valid event name and amount"); 
+    S.events.push({id:uid(),name,amount,day:S._day||new Date().getDate(),kind:val("evkind")}); 
+    save(); toast("Event added"); 
+  };
+
+  root.querySelectorAll("[data-ym]").forEach(b=>b.onclick=()=>{ S._ym=b.dataset.ym; render(); });
+  const expect=document.getElementById("expect");
+  if(expect) expect.onchange=()=>{ S.expectedIncome[S._ym]=+expect.value||0; save(); };
+  
+  root.querySelectorAll("[data-bud]").forEach(inp=>inp.onchange=()=>{ 
+    S.envelopes=S.envelopes.map(e=>e.id===inp.dataset.bud?{...e,budget:+inp.value||0}:e); 
+    save(); 
+  });
+  
+  root.querySelectorAll("[data-del-env]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Envelope", "Are you sure you want to delete this envelope?", () => {
+      S.envelopes=S.envelopes.filter(e=>e.id!==b.dataset.delEnv); save(); toast("Envelope deleted");
+    });
+  });
+  root.querySelectorAll("[data-edit-env]").forEach(b=>b.onclick=()=>{
+    const env = S.envelopes.find(e=>e.id===b.dataset.editEnv);
+    if(!env) return;
+    openEditModal("Edit Envelope", [
+      {id:"name", label:"Envelope Name", value:env.name},
+      {id:"budget", label:"Monthly Budget", type:"number", step:"any", value:env.budget}
+    ], vals => {
+      if(!vals.name) return toast("Name cannot be empty");
+      const oldName = env.name;
+      const newName = vals.name;
+      
+      S.envelopes = S.envelopes.map(e => e.id === env.id ? {...e, name:newName, budget:+vals.budget} : e);
+      
+      if (oldName !== newName) {
+        S.transactions = S.transactions.map(t => t.category === oldName ? {...t, category: newName} : t);
+      }
+      
+      save(); toast("Envelope updated & categories synchronized");
+    });
+  });
+
+  const addin=document.getElementById("addin");
+  if(addin) addin.onclick=()=>{ 
+    const amount=+val("iamt"); 
+    if(!amount) return toast("Enter valid income amount"); 
+    S.transactions.push({id:uid(),type:"income",amount,name:val("iname")||"Income",category:"Income",date:S._ym+"-01"}); 
+    save(); toast("Income added"); 
+  };
+  
+  const addsp=document.getElementById("addsp");
+  if(addsp) addsp.onclick=()=>{ 
+    const amount=+val("eamt"), category=val("ecat"); 
+    if(!amount) return toast("Enter valid spending amount"); 
+    const date=(today().startsWith(S._ym)?today():S._ym+"-15"); 
+    S.transactions.push({id:uid(),type:"expense",amount,name:val("ename")||category,category,date}); 
+    save(); toast("Spending logged"); 
+  };
+  
+  const addenv=document.getElementById("addenv");
+  if(addenv) addenv.onclick=()=>{ 
+    const name=val("newenv").trim(); 
+    if(!name) return; 
+    S.envelopes.push({id:uid(),name,budget:0}); 
+    save(); toast("Envelope added");
+  };
+
+  const log=document.getElementById("log");
+  if(log) log.onclick=()=>{ 
+    const amount=+val("lamt"), name=val("lname"); 
+    if(!amount||!name) return toast("Enter description and amount"); 
+    S.transactions.push({id:uid(),type:val("ltype"),amount,name,category:val("lcat")||(val("ltype")==="income"?"Income":"Other"),date:val("ldate")||today()}); 
+    save(); toast("Logged entry"); 
+  };
+
+  root.querySelectorAll("[data-del-tx]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Transaction", "Are you sure you want to delete this ledger entry?", () => {
+      S.transactions=S.transactions.filter(t=>t.id!==b.dataset.delTx); save(); toast("Transaction removed");
+    });
+  });
+
+  root.querySelectorAll("[data-edit-tx]").forEach(b=>b.onclick=()=>{
+    const t = S.transactions.find(x=>x.id===b.dataset.editTx);
+    if(!t) return;
+    openEditModal("Edit Transaction", [
+      {id:"name", label:"Description", value:t.name},
+      {id:"category", label:"Category", value:t.category},
+      {id:"amount", label:"Amount", type:"number", step:"any", value:t.amount},
+      {id:"date", label:"Date", type:"date", value:t.date},
+      {id:"type", label:"Type", type:"select", value:t.type, options:[{value:"expense", label:"Expense"},{value:"income", label:"Income"}]}
+    ], vals => {
+      if(!vals.name || isNaN(vals.amount)) return toast("Invalid values");
+      S.transactions = S.transactions.map(x => x.id === t.id ? {...x, name:vals.name, category:vals.category, amount:+vals.amount, date:vals.date, type:vals.type} : x);
+      save(); toast("Transaction updated");
+    });
+  });
+  
+  const searchTx=document.getElementById("searchTx");
+  if(searchTx) {
+    if(S._q) {
+      const q=S._q.toLowerCase();
+      document.querySelectorAll(".tx-row").forEach(row=>{
+        row.style.display = row.dataset.search.includes(q) ? "flex" : "none";
+      });
+    }
+    searchTx.oninput=(e)=>{ 
+      S._q=e.target.value;
+      const q=S._q.toLowerCase();
+      document.querySelectorAll(".tx-row").forEach(row=>{
+        row.style.display = row.dataset.search.includes(q) ? "flex" : "none";
+      });
+    };
+  }
+
+  // Enhanced CSV Import with Preview Modal
+  const impCsv = document.getElementById("impCsv");
+  if(impCsv) {
+    impCsv.onchange = async (e) => {
+      const file = e.target.files[0];
+      if(!file) return;
+      try {
+        const text = await file.text();
+        const lines = text.split("\n").map(l => l.trim()).filter(Boolean);
+        const parsedRows = [];
+        lines.forEach((line, idx) => {
+          if(idx === 0 && line.toLowerCase().includes("date")) return;
+          const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(p => p.replace(/^"|"$/g,'').trim());
+          if(parts.length >= 5) {
+            const [date, type, category, name, amount] = parts;
+            if(!isNaN(amount) && date) {
+              parsedRows.push({date, type: type.toLowerCase().includes("inc")?"income":"expense", category, name, amount: +amount});
+            }
+          }
+        });
+
+        if(!parsedRows.length) {
+          return toast("No valid transactions found in CSV file.");
+        }
+
+        // Preview Modal before final import
+        const container = document.getElementById("modal-container");
+        const previewList = parsedRows.slice(0, 5).map(r => `<div class="row"><span>${r.date} · ${esc(r.name)}</span><span><b>${money(r.amount)}</b></span></div>`).join("");
+        container.innerHTML = `
+          <div class="modal-overlay" id="csv-preview-overlay" role="dialog" aria-modal="true">
+            <div class="modal-card" style="max-width:500px">
+              <h2 style="font-family:var(--display);font-size:22px;margin-bottom:8px">Import CSV Preview</h2>
+              <p class="hint" style="margin-bottom:16px">Found <b>${parsedRows.length}</b> transactions. Here is a preview of the first few rows:</p>
+              <div style="background:var(--surface-2);border-radius:12px;padding:8px 12px;margin-bottom:20px;max-height:220px;overflow:auto">${previewList}</div>
+              <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button class="btn ghost" id="csv-cancel">Cancel</button>
+                <button class="btn" id="csv-confirm">Import ${parsedRows.length} Transactions</button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        document.getElementById("csv-cancel").onclick = () => { container.innerHTML = ""; impCsv.value = ""; };
+        document.getElementById("csv-confirm").onclick = () => {
+          parsedRows.forEach(r => S.transactions.push({id: uid(), ...r}));
+          container.innerHTML = "";
+          impCsv.value = "";
+          save();
+          toast(`Successfully imported ${parsedRows.length} transactions`);
+        };
+      } catch(err) {
+        toast("Failed to parse CSV file");
+        impCsv.value = "";
+      }
+    };
+  }
+  
+  const pay=document.getElementById("payamt");
+  if(pay){ pay.oninput=()=>{ S._pay=pay.value; S._alloc=S._alloc||{}; root.querySelectorAll("[data-alloc]").forEach(i=>S._alloc[i.dataset.alloc]=i.value); render(); }; }
+  root.querySelectorAll("[data-alloc]").forEach(i=>i.onchange=()=>{ S._alloc=S._alloc||{}; S._alloc[i.dataset.alloc]=i.value; S._pay=val("payamt"); render(); });
+  
+  const apply=document.getElementById("applypay");
+  if(apply) apply.onclick=()=>{
+    const total=+val("payamt")||0; if(total<=0) return toast("Enter valid paycheck amount");
+    const allocMap = S._alloc || {};
+    const used = Object.values(allocMap).reduce((n,v)=>n+(+v||0),0);
+    const unassigned = total - used;
+
+    const executePaycheck = () => {
+      const date=today();
+      S.transactions.push({id:uid(),type:"income",amount:total,name:"Paycheck",category:"Income",date});
+      root.querySelectorAll("[data-alloc]").forEach(i=>{
+        const n=+i.value||0; const name=i.dataset.alloc;
+        if(n>0) {
+          const cat = name==="Extra debt" ? "Debt" : name==="Savings" ? "Savings" : name;
+          const txName = name==="Extra debt" ? "Extra Debt Payment" : name==="Savings" ? "Savings Contribution" : "Paycheck plan";
+          S.transactions.push({id:uid(),type:"expense",amount:n,name:txName,category:cat,date});
+        }
+      });
+      save(); toast("Paycheck applied & logged");
+    };
+
+    if (unassigned < 0) {
+      confirmModal("Negative Unassigned Balance", "Allocated amount exceeds total paycheck by " + money(Math.abs(unassigned)) + ". Do you still wish to apply this paycheck?", executePaycheck);
+    } else {
+      executePaycheck();
+    }
+  };
+
+  root.querySelectorAll("[data-del-as]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Asset", "Are you sure you want to delete this asset?", () => {
+      S.assets=S.assets.filter(a=>a.id!==b.dataset.delAs); save(); toast("Asset removed");
+    });
+  });
+  root.querySelectorAll("[data-edit-as]").forEach(b=>b.onclick=()=>{
+    const a = S.assets.find(x=>x.id===b.dataset.editAs);
+    if(!a) return;
+    openEditModal("Edit Asset", [
+      {id:"name", label:"Asset Name", value:a.name},
+      {id:"value", label:"Value", type:"number", step:"any", value:a.value},
+      {id:"kind", label:"Kind", type:"select", value:a.kind, options:["Cash","Investment","Property","Vehicle","Other"].map(k=>({value:k, label:k}))}
+    ], vals => {
+      if(!vals.name || isNaN(vals.value)) return toast("Invalid values");
+      S.assets = S.assets.map(x => x.id === a.id ? {...x, name:vals.name, value:+vals.value, kind:vals.kind} : x);
+      save(); toast("Asset updated");
+    });
+  });
+
+  root.querySelectorAll("[data-del-db]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Debt", "Are you sure you want to delete this liability?", () => {
+      S.debts=S.debts.filter(d=>d.id!==b.dataset.delDb); save(); toast("Debt removed");
+    });
+  });
+  root.querySelectorAll("[data-edit-db]").forEach(b=>b.onclick=()=>{
+    const d = S.debts.find(x=>x.id===b.dataset.editDb);
+    if(!d) return;
+    openEditModal("Edit Liability", [
+      {id:"name", label:"Debt Name", value:d.name},
+      {id:"balance", label:"Balance", type:"number", step:"any", value:d.balance},
+      {id:"min", label:"Min Payment", type:"number", step:"any", value:d.min},
+      {id:"apr", label:"APR %", type:"number", step:"any", value:d.apr}
+    ], vals => {
+      if(!vals.name || isNaN(vals.balance)) return toast("Invalid values");
+      S.debts = S.debts.map(x => x.id === d.id ? {...x, name:vals.name, balance:+vals.balance, min:+vals.min, apr:+vals.apr} : x);
+      save(); toast("Liability updated");
+    });
+  });
+
+  const adda=document.getElementById("adda");
+  if(adda) adda.onclick=()=>{ 
+    if(!val("an")||!+val("av")) return toast("Enter asset name and value"); 
+    S.assets.push({id:uid(),name:val("an"),value:+val("av"),kind:val("ak")}); 
+    save(); toast("Asset added"); 
+  };
+  
+  const addd=document.getElementById("addd");
+  if(addd) addd.onclick=()=>{ 
+    if(!val("dn")||!+val("db")) return toast("Enter liability name and balance"); 
+    S.debts.push({id:uid(),name:val("dn"),balance:+val("db"),min:+val("dm")||0,apr:+val("dr")||0}); 
+    save(); toast("Debt added"); 
+  };
+
+  const snap=document.getElementById("snap");
+  if(snap) snap.onclick=()=>{ 
+    const date=today(); 
+    S.snapshots=[...S.snapshots.filter(p=>p.date!==date),{date,value:Math.round(nw())}]; 
+    save(); toast("Net worth snapshot saved"); 
+  };
+  
+  const extra=document.getElementById("extra");
+  if(extra) extra.onchange=()=>{ S.extraDebt=+extra.value||0; save(); };
+  
+  const snow=document.getElementById("snowball"), av=document.getElementById("avalanche");
+  if(snow) snow.onclick=()=>{ S.debtFocus="snowball"; save(); };
+  if(av) av.onclick=()=>{ S.debtFocus="avalanche"; save(); };
+
+  root.querySelectorAll("[data-del-fu]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Fund", "Are you sure you want to delete this savings fund?", () => {
+      S.funds=S.funds.filter(f=>f.id!==b.dataset.delFu); save(); toast("Fund removed");
+    });
+  });
+  root.querySelectorAll("[data-edit-fu]").forEach(b=>b.onclick=()=>{
+    const f = S.funds.find(x=>x.id===b.dataset.editFu);
+    if(!f) return;
+    openEditModal("Edit Savings Fund", [
+      {id:"name", label:"Fund Name", value:f.name},
+      {id:"saved", label:"Saved Amount", type:"number", step:"any", value:f.saved},
+      {id:"target", label:"Target Amount", type:"number", step:"any", value:f.target},
+      {id:"due", label:"Target Date", type:"date", value:f.due}
+    ], vals => {
+      if(!vals.name || isNaN(vals.target)) return toast("Invalid values");
+      S.funds = S.funds.map(x => x.id === f.id ? {...x, name:vals.name, saved:+vals.saved, target:+vals.target, due:vals.due} : x);
+      save(); toast("Fund updated");
+    });
+  });
+
+  root.querySelectorAll("[data-addf-go]").forEach(b=>b.onclick=()=>{
+    const inp=root.querySelector(`[data-addf="${b.dataset.addfGo}"]`); const n=+inp.value; if(!n) return toast("Enter amount to add");
+    S.funds=S.funds.map(f=>f.id===b.dataset.addfGo?{...f,saved:f.saved+n}:f); save(); toast("Added to fund");
+  });
+
+  const addf=document.getElementById("addf");
+  if(addf) addf.onclick=()=>{ 
+    if(!val("fn")||!+val("ft")) return toast("Enter fund name and target amount"); 
+    S.funds.push({id:uid(),name:val("fn"),saved:0,target:+val("ft"),due:val("fd")}); 
+    save(); toast("Fund created");
+  };
+
+  root.querySelectorAll("[data-gst]").forEach(sel=>sel.onchange=()=>{ S.goals=S.goals.map(g=>g.id===sel.dataset.gst?{...g,status:sel.value}:g); save(); });
+  
+  root.querySelectorAll("[data-del-g]").forEach(b=>b.onclick=()=>{
+    confirmModal("Delete Goal", "Are you sure you want to delete this goal?", () => {
+      S.goals=S.goals.filter(g=>g.id!==b.dataset.delG); save(); toast("Goal removed");
+    });
+  });
+  root.querySelectorAll("[data-edit-g]").forEach(b=>b.onclick=()=>{
+    const g = S.goals.find(x=>x.id===b.dataset.editG);
+    if(!g) return;
+    openEditModal("Edit Goal", [
+      {id:"name", label:"Goal Name", value:g.name},
+      {id:"due", label:"Due Date", type:"date", value:g.due},
+      {id:"note", label:"Note / Details", type:"textarea", value:g.note},
+      {id:"status", label:"Status", type:"select", value:g.status, options:[{value:"not",label:"Not started"},{value:"progress",label:"In progress"},{value:"done",label:"Done"}]}
+    ], vals => {
+      if(!vals.name) return toast("Name cannot be empty");
+      S.goals = S.goals.map(x => x.id === g.id ? {...x, name:vals.name, due:vals.due, note:vals.note, status:vals.status} : x);
+      save(); toast("Goal updated");
+    });
+  });
+
+  const addg=document.getElementById("addg");
+  if(addg) addg.onclick=()=>{ 
+    if(!val("gn")) return toast("Enter goal name"); 
+    S.goals.push({id:uid(),name:val("gn"),due:val("gd"),note:val("gnote"),status:"not"}); 
+    save(); toast("Goal added"); 
+  };
+  
+  const name=document.getElementById("name");
+  if(name) name.onchange=()=>{ S.name=name.value; save(); };
+  
+  const currPref=document.getElementById("currencyPref");
+  if(currPref) currPref.onchange=()=>{ S.currency=currPref.value; save(); };
+  
+  root.querySelectorAll("[data-accent]").forEach(b=>b.onclick=()=>{ S.accent=b.dataset.accent; save(); });
+  
+  const night=document.getElementById("night");
+  if(night) night.onclick=()=>{ S.night=!S.night; save(); };
+
+  const savePin=document.getElementById("savePin");
+  if(savePin) savePin.onclick=async ()=>{
+    const p=val("pinInput");
+    if(p.length===4 && !isNaN(p)) {
+      S.pinHash = await hashPin(p);
+      delete S.pin;
+      save(); toast("Privacy PIN saved securely");
+    } else {
+      toast("Enter a valid 4-digit numeric PIN");
+    }
+  };
+
+  const removePin=document.getElementById("removePin");
+  if(removePin) removePin.onclick=()=>{
+    promptPinForAction(() => {
+      S.pinHash = "";
+      delete S.pin;
+      save();
+      toast("Privacy PIN removed");
+    });
+  };
+
+  const lockNowBtn=document.getElementById("lockNowBtn");
+  if(lockNowBtn) lockNowBtn.onclick=lockApp;
+
+  const exp=document.getElementById("exp");
+  if(exp) exp.onclick=()=>{ 
+    S.lastBackup = today();
+    save();
+    const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"}); 
+    const a=document.createElement("a"); 
+    a.href=URL.createObjectURL(blob); 
+    a.download=`solace-backup-${today()}.json`; 
+    a.click(); 
+    toast("Backup downloaded successfully");
+  };
+
+  const expCsv=document.getElementById("expCsv");
+  if(expCsv) expCsv.onclick=()=>{ 
+    const headers = "Date,Type,Category,Name,Amount\n";
+    const rows = S.transactions.map(t => `${t.date},${t.type},"${String(t.category).replace(/"/g,'""')}","${String(t.name).replace(/"/g,'""')}",${t.amount}`).join("\n");
+    const blob=new Blob([headers+rows],{type:"text/csv"}); 
+    const a=document.createElement("a"); 
+    a.href=URL.createObjectURL(blob); 
+    a.download=`solace-ledger-${today()}.csv`; 
+    a.click(); 
+    toast("Ledger exported to CSV");
+  };
+
+  const imp=document.getElementById("imp");
+  if(imp) imp.onchange=async ()=>{ 
+    const f=imp.files[0]; if(!f) return; 
+    try { 
+      const p = JSON.parse(await f.text()); 
+      if(!p || typeof p !== "object" || !Array.isArray(p.transactions) || !Array.isArray(p.assets) || !Array.isArray(p.debts) || !Array.isArray(p.envelopes) || !Array.isArray(p.funds) || !Array.isArray(p.goals)) {
+        throw new Error("Invalid backup schema structure");
+      }
+      
+      for(let tx of p.transactions) {
+        if(!tx.id || typeof tx.amount !== "number" || !tx.date) throw new Error("Malformed transaction item");
+      }
+      for(let ast of p.assets) {
+        if(!ast.id || typeof ast.value !== "number") throw new Error("Malformed asset item");
+      }
+      for(let dbt of p.debts) {
+        if(!dbt.id || typeof dbt.balance !== "number") throw new Error("Malformed debt item");
+      }
+
+      const existingPinHash = S.pinHash;
+      S = Object.assign(emptyState(), p);
+      if (!S.pinHash && existingPinHash) {
+        S.pinHash = existingPinHash;
+      }
+      delete S.pin;
+      
+      save(); 
+      toast("Backup restored successfully"); 
+    } catch(e) { 
+      toast("Error: Invalid or corrupted Solace backup file."); 
+    } 
+  };
+
+  const loadDemoDataBtn=document.getElementById("loadDemo");
+  if(loadDemoDataBtn) loadDemoDataBtn.onclick=()=>{ 
+    confirmModal("Load Demo Data", "This will replace your current workspace with sample data. Continue?", () => {
+      S = loadDemoData(); save(); toast("Demo data loaded successfully");
+    });
+  };
+
+  const wipe=document.getElementById("wipe");
+  if(wipe) wipe.onclick=()=>{ 
+    confirmModal("Erase Everything", "Are you absolutely sure you want to erase all data and start fresh? This cannot be undone unless you have a JSON backup.", () => {
+      S = emptyState(); save(); toast("Application reset to fresh state");
+    });
+  };
+}
+
+document.getElementById("menu").onclick=()=>document.getElementById("drawer").classList.add("open");
+document.getElementById("close").onclick=()=>document.getElementById("drawer").classList.remove("open");
+document.getElementById("lockTop").onclick = lockApp;
+document.getElementById("lockSide").onclick = lockApp;
+
+function toggleTheme(){ S.night=!S.night; save(); }
+["themeTop","themeSide","themeDrawer"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.onclick = toggleTheme;
+});
+bindNav(document.getElementById("nav"));
+bindNav(document.getElementById("drawerNav"));
+applyTheme();
+render();
+</script>
+
+<script>
+/* Solace promotional demo gate. This is a convenience restriction, not tamper-proof licensing. */
+(function(){
+  if (!window.SOLACE_DEMO_MODE) return;
+  const blockedIds = new Set(['exp','expCsv','imp','impCsv','printReports']);
+  function blockedControl(target){
+    if (!target) return false;
+    if (target.id && blockedIds.has(target.id)) return true;
+    const label = target.closest && target.closest('label');
+    return !!(label && label.querySelector && label.querySelector('#imp, #impCsv'));
+  }
+  function showNotice(){
+    const toast = document.getElementById('toast');
+    if (toast) { toast.textContent = 'This feature is available in the full Solace version.'; toast.hidden = false; }
+    else window.alert('This feature is available in the full Solace version.');
+  }
+  document.addEventListener('click', function(e){
+    if (blockedControl(e.target)) {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); showNotice();
+    }
+  }, true);
+  document.addEventListener('change', function(e){
+    if (blockedControl(e.target)) {
+      e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+      try { e.target.value = ''; } catch (_) {}
+      showNotice();
+    }
+  }, true);
+  document.addEventListener('DOMContentLoaded', function(){
+    blockedIds.forEach(function(id){
+      const el = document.getElementById(id);
+      if (el) { el.classList.add('solace-demo-locked'); el.setAttribute('aria-label', (el.getAttribute('aria-label') || el.textContent || id) + ' — full version only'); }
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
